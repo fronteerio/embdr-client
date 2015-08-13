@@ -1,0 +1,30 @@
+{
+  "name": "embdr",
+  "version": "0.0.1",
+  "homepage": "https://github.com/fronteerio/embdr-client",
+  "authors": [
+    "embdr.io"
+  ],
+  "description": "Embed any kind of content in your own application",
+  "main": "embdr.js",
+  "keywords": [
+    "embdr",
+    "content",
+    "embedding",
+    "image",
+    "documents",
+    "links",
+    "pdf",
+    "office",
+    "word",
+    "excel"
+  ],
+  "license": "Apache 2.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
