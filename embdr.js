@@ -6,95 +6,34 @@
 
     var EMBDR_DOMAIN = 'embdr.io';
 
-    var EMBDR_TYPES = {
-        'document': [
-            'application/CDFV2-corrupt',
-            'application/msword',
-            'application/pdf',
-            'application/rdf+xml',
-            'application/vnd.ms-excel',
-            'application/vnd.ms-excel.12',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.ms-powerpoint.12',
-            'application/vnd.oasis.opendocument.chart',
-            'application/vnd.oasis.opendocument.database',
-            'application/vnd.oasis.opendocument.formula',
-            'application/vnd.oasis.opendocument.graphics',
-            'application/vnd.oasis.opendocument.graphics-template',
-            'application/vnd.oasis.opendocument.image',
-            'application/vnd.oasis.opendocument.presentation',
-            'application/vnd.oasis.opendocument.presentation-template',
-            'application/vnd.oasis.opendocument.spreadsheet',
-            'application/vnd.oasis.opendocument.spreadsheetml',
-            'application/vnd.oasis.opendocument.spreadsheet-template',
-            'application/vnd.oasis.opendocument.text',
-            'application/vnd.oasis.opendocument.text-master',
-            'application/vnd.oasis.opendocument.text-web',
-            'application/vnd.openofficeorg.extension',
-            'application/vnd.openxmlformats-officedocument.presentationml',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/x-mspowerpoint',
-            'application/x-pdf',
-            'application/x-powerpoint',
-            'text/plain'
-        ],
-        'iframe': [
-            'link',
-            'link/vimeo',
-            'link/youtube'
-        ],
-        'image': [
-            'application/dicom',
-            'application/postscript',
-            'application/tga',
-            'application/x-font-ttf',
-            'application/x-tga',
-            'application/x-targa',
-            'image/bmp',
-            'image/gif',
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/svg+xml',
-            'image/targa',
-            'image/tga',
-            'image/tiff',
-            'image/vnd.adobe.photoshop',
-            'image/webp',
-            'image/x-cmu-raster',
-            'image/x-gnuplot',
-            'image/x-icon',
-            'image/x-targa',
-            'image/x-tga',
-            'image/x-xbitmap',
-            'image/x-xpixmap',
-            'image/x-xwindowdump',
-            'image/xcf'
-        ]
-    };
-
     /**
      * Embed a resource in the DOM
      *
-     * @param  {String}     elementId                               The id of the DOM element where the resource preview should be embedded
-     * @param  {String}     resourceId                              The id of the Embdr resource that should be embedded
-     * @param  {String}     embedKey                                The key that can be used to retrieve the Embdr resource. This should be part of the response when you created the resource
-     * @param  {Object}     [options]                               A set of additional embed options
-     * @param  {Object}     [options.callback]                      Invoked when a resource has been embedded or when an error occurred
-     * @param  {Object}     [options.callback.err]                  An error object, if any
-     * @param  {String}     [options.loadingIcon]                   This icon will be used in the loading animation when embedding a document. This defaults to the Embdr logo
-     * @param  {Function}   [options.unsupported]                   Invoked when a resource was uploaded for which no previews can be generated. If this function is omitted an image will be displayed explaining no previews could've been generated
-     * @param  {Object}     [options.unsupported.resource]          The full resource data is passed in so you can customise your own message appropriately
-     * @param  {Function}   [options.linkEmbeddedAsImage]           Invoked when a link resource cannot be embedded as an iframe but will be iframed as an image
+     * @param  {Element|String}     element                                         The DOM element (or the id of the DOM element) where the resource preview should be embedded
+     * @param  {String}             resourceId                                      The id of the Embdr resource that should be embedded
+     * @param  {String}             embedKey                                        The key that can be used to retrieve the Embdr resource. This is provided when the resource was created
+     * @param  {Object}             [options]                                       A set of additional embed options
+     * @param  {Object}             [options.callback]                              Invoked when a resource has been embedded or when an error occurred
+     * @param  {Object}             [options.callback.err]                          An error object, if any
+     * @param  {String}             [options.loadingIcon]                           This icon will be used in the loading animation when embedding a document. This defaults to the Embdr logo
+     * @param  {Function}           [options.unsupported]                           Invoked when an unsupported resource was uploaded for which no previews can be generated. If this function is omitted an image will be displayed explaining no previews could be generated
+     * @param  {Object}             [options.unsupported.resource]                  The full resource data is passed in so you can customise your own message appropriately
+     * @param  {Function}           [options.pending]                               Invoked when a resource is still being processed
+     * @param  {Object}             [options.pending.resource]                      The full resource data is passed in so you can customise your own message appropriately
+     * @param  {Function}           [options.linkEmbeddedAsImage]                   Invoked when a link resource cannot be embedded as an iframe but will be iframed as an image
+     * @param  {Object}             [options.linkEmbeddedAsImage.resource]          The full resource data is passed in so you can customise your own message appropriately
      */
-    window.embdr = function(elementId, resourceId, embedKey, options) {
+    window.embdr = function(element, resourceId, embedKey, options) {
+        // Allow the consumer to pass in element or the id of an element
+        if (typeof element === 'string') {
+            element = document.getElementById(element);
+        }
+
+        // Default all the options
         options = options || {};
         options.callback = options.callback || function() {};
         options.loadingIcon = options.loadingIcon || '//embdr.io/images/logo.png';
+        options.pending = options.pending || '//embdr.io/images/pending.png';
         options.unsupported = options.unsupported || '//embdr.io/images/unsupported.png';
         options.linkEmbeddedAsImage = options.linkEmbeddedAsImage || function() {};
 
@@ -104,32 +43,73 @@
                 return options.callback(err);
             }
 
-            // Determine how the resource should be embedded
-            var embedType = getEmbedType(resource);
-            var html = getEmbedCode(resource, embedType, options);
+            // Embed the resource if it's been completely processed
+            if (resource.status !== 'pending') {
+                embed(element, resource, options);
 
-            // Embed it
-            var el = document.getElementById(elementId);
-            if (el && html) {
-                el.innerHTML = html;
+            // Try again in a few seconds otherwise
+            } else {
+                options.pending(resource);
+                setTimeout(checkForUpdates, 2000, element, resource, options);
             }
-            return options.callback();
         });
     };
 
+    /**
+     * Poll the REST API and check if a resource has any updates. When a resource' status is no longer
+     * pending it will be embedded into the page
+     *
+     * @param  {Element}    element         The DOM element where the resource preview should be embedded
+     * @param  {Object}     resource        The resource to embed
+     * @param  {Object}     options         A set of additional embed options
+     * @api private
+     */
+    var checkForUpdates = function(element, resource, options) {
+        getResourceData(resource.id, resource.embedKey, function(err, resource) {
+            if (err) {
+                return options.callback(err);
+            }
+
+            if (resource.status !== 'pending') {
+                embed(element, resource, options);
+            } else {
+                setTimeout(checkForUpdates, 2000, element, resource, options);
+            }
+        });
+    };
+
+    /**
+     * Embed a resource into the page
+     *
+     * @param  {Element}    element         The DOM element where the resource preview should be embedded
+     * @param  {Object}     resource        The resource to embed
+     * @param  {Object}     options         A set of additional embed options
+     * @api private
+     */
+    var embed = function(element, resource, options) {
+        var html = getEmbedCode(resource, options);
+        if (element && html) {
+            element.innerHTML = html;
+        }
+        return options.callback(null, resource);
+    };
 
     /**
      * Get the embed code for a resource
      *
      * @param  {Object}     resource        The resource to get the embed code for
-     * @param  {String}     embedType       The manner through which the resource should be embedded
      * @param  {Object}     options         A set of additional embed options
      * @return {String}                     The embed code for a resource
      * @api private
      */
-    var getEmbedCode = function(resource, embedType, options) {
+    var getEmbedCode = function(resource, options) {
+        var embedType = getEmbedType(resource);
+
+        // Check for document embedding first as it has its own polling logic
         if (embedType === 'document') {
             return getDocumentEmbedCode(resource, options);
+        } else if (embedType === 'pending') {
+            return getPendingEmbedCode(resource, options);
         } else if (embedType === 'iframe') {
             return getIframeEmbedCode(resource, options);
         } else if (embedType === 'image') {
@@ -148,13 +128,11 @@
      * @api private
      */
     var getDocumentEmbedCode = function(resource, options) {
-        return [
-            '<iframe class="embdr-document" width="600" height="800" frameborder="0"',
-            'src="//' + EMBDR_DOMAIN + '/document.html?id=' + resource.id + '&embedKey=' + resource.embedKey + '&loadingIcon=' + options.loadingIcon + '"',
-            'webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" allowscriptaccess="always" scrolling="no">',
-            '</iframe>'
-        ].join('');
-    }
+        return '<iframe class="embdr-document" width="600" height="800" frameborder="0"' +
+            'src="//' + EMBDR_DOMAIN + '/document.html?id=' + resource.id + '&embedKey=' + resource.embedKey + '&loadingIcon=' + options.loadingIcon + '"' +
+            'webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" allowscriptaccess="always" scrolling="no">' +
+            '</iframe>';
+    };
 
     /**
      * Get the embed code for an iframe resource
@@ -167,22 +145,31 @@
     var getIframeEmbedCode = function(resource, options) {
         // The resource needs to be a link that
         //   a/ allows iframe embedding through its headers
-        //   b/ embeddable over the same protocol as that which the current page is being served over
-        var isEmbeddable = resource.metadata.embeddable
+        //   b/ is embeddable over the same protocol as that which the current page is being served over
+        var isEmbeddable = resource.metadata.embeddable;
         var protocol = document.location.protocol.split(':')[0];
         var isProtocolCompatible = (protocol === 'http' || (protocol === 'https' && resource.metadata.httpsAccessible));
 
-        // Invoke a user-provided callback function if the link can't be embedded through an iframe
-        if (options.linkEmbeddedAsImage && !(isEmbeddable && isProtocolCompatible)) {
-            options.linkEmbeddedAsImage(resource);
-        }
+        // Ensure the resource can be embedded as an iframe
+        if (!isEmbeddable || !isProtocolCompatible) {
+            // Embed an image if there is one
+            if (resource.webshot && resource.webshot.url) {
+                // Invoke a user-provided callback function if the link can't be embedded through an iframe
+                options.linkEmbeddedAsImage(resource);
+                return getImageEmbedCode(resource, options, resource.webshot.url);
 
-        return  [
-            '<iframe class="embdr-iframe" width="100%" height="390" frameborder="0"',
-            'src="//' + EMBDR_DOMAIN + '/embed/' + resource.id + '/iframe?embedKey=' + resource.embedKey + '"',
-            'frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen',
-            'allowscriptaccess="always" scrolling="yes"></iframe>'
-        ].join(' ')
+            // Something is amiss if there's no webshot image
+            } else {
+                return getUnsupportedEmbedCode(resource, options);
+            }
+
+        // Embed the resource as an iframe
+        } else {
+            return '<iframe class="embdr-iframe" width="100%" height="390" frameborder="0" ' +
+                'src="//' + EMBDR_DOMAIN + '/embed/' + resource.id + '/iframe?embedKey=' + resource.embedKey + '" ' +
+                'frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen ' +
+                'allowscriptaccess="always" scrolling="yes"></iframe>';
+        }
     };
 
     /**
@@ -190,15 +177,32 @@
      *
      * @param  {Object}     resource        The resource to get the embed code for
      * @param  {Object}     options         A set of additional embed options
+     * @param  {String}     [url]           The url of the image to embed
      * @return {String}                     The embed code for a resource
      * @api private
      */
-    var getImageEmbedCode = function(resource, options) {
-        return [
-            '<img class="embdr-image" alt="' + resource.metadata.title + '" title="' + resource.metadata.title + '"',
-            'src="//' + EMBDR_DOMAIN + '/embed/' + resource.id + '/image?embedKey=' + resource.embedKey + '"',
-            'style="max-width: 100%; max-height: inherit; height: inherit; width: inherit;" />'
-        ].join(' ');
+    var getImageEmbedCode = function(resource, options, url) {
+        url = url || '//' + EMBDR_DOMAIN + '/embed/' + resource.id + '/image?embedKey=' + resource.embedKey;
+        return '<img class="embdr-image" alt="' + resource.metadata.title + '" title="' + resource.metadata.title + '" ' +
+            'src="' + url + '" style="max-width: 100%; max-height: inherit; height: inherit; width: inherit;" />';
+    };
+
+    /**
+     * Get the embed code for a pending resource
+     *
+     * @param  {Object}     resource        The resource to get the embed code for
+     * @param  {Object}     options         A set of additional embed options
+     * @return {String}                     The embed code for a resource
+     * @api private
+     */
+    var getPendingEmbedCode = function(resource, options) {
+        // Allow consumers to render their own messages when a resource is still pending
+        if (typeof options.pending === 'function') {
+            options.pending(resource);
+            return null;
+        } else {
+            return getImageEmbedCode(resource, options, options.pending);
+        }
     };
 
     /**
@@ -213,15 +217,9 @@
         // Allow consumers to render their own messages when a resource isn't supported
         if (typeof options.unsupported === 'function') {
             options.unsupported(resource);
-
-            // Don't embed anything for unsupported resource
             return null;
         } else {
-            return [
-                '<img class="embdr-image" alt="' + resource.metadata.title + '" title="' + resource.metadata.title + '"',
-                'src="' + options.unsupported + '"',
-                'style="max-width: 100%; max-height: inherit; height: inherit; width: inherit;" />'
-            ].join('');
+            return getImageEmbedCode(resource, options, options.unsupported);
         }
     };
 
@@ -233,8 +231,11 @@
      * @api private
      */
     var getEmbedType = function(resource) {
+        if (resource.status === 'pending') {
+            return 'pending';
+
         // Always use the document processor if the resource can be embedded that way
-        if (canEmbedAsDocument(resource)) {
+        } else if (canEmbedAsDocument(resource)) {
             return 'document';
 
         // When a resource can be embedded as an iframe, use that embed method
@@ -257,7 +258,7 @@
      * @api private
      */
     var canEmbedAsDocument = function(resource) {
-        return (EMBDR_TYPES.document.indexOf(resource.mimeType) !== -1);
+        return resource.htmlPages;
     };
 
     /**
@@ -268,7 +269,7 @@
      * @api private
      */
     var canEmbedAsIframe = function(resource) {
-        return (EMBDR_TYPES.iframe.indexOf(resource.mimeType) !== -1);
+        return (resource.mimeType.indexOf('link') === 0);
     };
 
     /**
@@ -279,7 +280,7 @@
      * @api private
      */
     var canEmbedAsImage = function(resource) {
-        return (EMBDR_TYPES.image.indexOf(resource.mimeType) !== -1);
+        return (resource.images || resource.mimeType.indexOf('image/') === 0);
     };
 
     /**
