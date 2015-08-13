@@ -146,12 +146,16 @@
         // The resource needs to be a link that
         //   a/ allows iframe embedding through its headers
         //   b/ is embeddable over the same protocol as that which the current page is being served over
-        var isEmbeddable = resource.metadata.embeddable;
         var protocol = document.location.protocol.split(':')[0];
-        var isProtocolCompatible = (protocol === 'http' || (protocol === 'https' && resource.metadata.httpsAccessible));
+        var isEmbeddable = resource.metadata[protocol + 'iFrameEmbeddable'];
 
-        // Ensure the resource can be embedded as an iframe
-        if (!isEmbeddable || !isProtocolCompatible) {
+        // Embed the resource as an iframe
+        if (resource.metadata.redirectUrl || isEmbeddable) {
+            var url = resource.metadata.redirectUrl || resource.metadata.url;
+            return '<iframe class="embdr-iframe" width="100%" height="390" src="' + url + '" ' +
+                'frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen ' +
+                'allowscriptaccess="always" scrolling="yes"></iframe>';
+        } else {
             // Embed an image if there is one
             if (resource.webshot && resource.webshot.url) {
                 // Invoke a user-provided callback function if the link can't be embedded through an iframe
@@ -162,13 +166,6 @@
             } else {
                 return getUnsupportedEmbedCode(resource, options);
             }
-
-        // Embed the resource as an iframe
-        } else {
-            return '<iframe class="embdr-iframe" width="100%" height="390" frameborder="0" ' +
-                'src="//' + EMBDR_DOMAIN + '/embed/' + resource.id + '/iframe?embedKey=' + resource.embedKey + '" ' +
-                'frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen ' +
-                'allowscriptaccess="always" scrolling="yes"></iframe>';
         }
     };
 
