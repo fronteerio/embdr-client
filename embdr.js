@@ -58,7 +58,10 @@
                 return options.callback(err);
             }
 
-            if (resource.status !== 'pending' || canEmbedAsDocument(resource)) {
+            // If the resource has been processed we can embed a preview in the DOM. If the resource
+            // is a document or an image we can embed it as well, as both those types can handle
+            // pending resources
+            if (resource.status !== 'pending' || canEmbedAsDocument(resource) || canEmbedAsImage(resource)) {
                 embed(element, resource, options);
             } else {
                 // Invoke a user provided callback if the resource is still pending
@@ -222,20 +225,21 @@
      * @api private
      */
     var getEmbedType = function(resource) {
-        if (resource.status === 'pending') {
-            return 'pending';
-
         // Always use the document processor if the resource can be embedded that way
-        } else if (canEmbedAsDocument(resource)) {
+        if (canEmbedAsDocument(resource)) {
             return 'document';
-
-        // When a resource can be embedded as an iframe, use that embed method
-        } else if (canEmbedAsIframe(resource)) {
-            return 'iframe';
 
         // Check whether we can embed an image
         } else if (canEmbedAsImage(resource)) {
             return 'image';
+
+        // At this point we have to wait until the resource is done processing
+        } else if (resource.status === 'pending') {
+            return 'pending';
+
+        // When a resource can be embedded as an iframe, use that embed method
+        } else if (canEmbedAsIframe(resource)) {
+            return 'iframe';
         }
 
         return 'unsupported';
@@ -249,7 +253,7 @@
      * @api private
      */
     var canEmbedAsDocument = function(resource) {
-        return (resource.htmlPages && resource.htmlPages.status === 'done');
+        return (resource.htmlPages);
     };
 
     /**
@@ -271,18 +275,7 @@
      * @api private
      */
     var canEmbedAsImage = function(resource) {
-        if (!resource.images) {
-            return false;
-        }
-
-        var hasDoneImage = false
-        var images = Object.keys(resource.images).forEach(function(image) {
-            if (resource.images[image].status === 'done') {
-                hasDoneImage = true;
-            }
-        });
-
-        return hasDoneImage;
+        return (resource.images !== undefined);
     };
 
     /**
