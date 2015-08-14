@@ -37,22 +37,8 @@
         options.unsupported = options.unsupported || '//embdr.io/images/unsupported.png';
         options.linkEmbeddedAsImage = options.linkEmbeddedAsImage || function() {};
 
-        // Get the resource data from the API
-        getResourceData(resourceId, embedKey, function(err, resource) {
-            if (err) {
-                return options.callback(err);
-            }
-
-            // Embed the resource if it's been completely processed
-            if (resource.status !== 'pending') {
-                embed(element, resource, options);
-
-            // Try again in a few seconds otherwise
-            } else {
-                options.pending(resource);
-                setTimeout(checkForUpdates, 2000, element, resource, options);
-            }
-        });
+        // Get the data from the REST API and embed the previews (if any)
+        checkForUpdates(element, resourceId, embedKey, options);
     };
 
     /**
@@ -60,12 +46,13 @@
      * pending it will be embedded into the page
      *
      * @param  {Element}    element         The DOM element where the resource preview should be embedded
-     * @param  {Object}     resource        The resource to embed
+     * @param  {String}     resourceId      The id of the Embdr resource that should be embedded
+     * @param  {String}     embedKey        The key that can be used to retrieve the Embdr resource. This is provided when the resource was created
      * @param  {Object}     options         A set of additional embed options
      * @api private
      */
-    var checkForUpdates = function(element, resource, options) {
-        getResourceData(resource.id, resource.embedKey, function(err, resource) {
+    var checkForUpdates = function(element, resourceId, embedKey, options) {
+        getResourceData(resourceId, embedKey, function(err, resource) {
             if (err) {
                 return options.callback(err);
             }
@@ -73,7 +60,7 @@
             if (resource.status !== 'pending') {
                 embed(element, resource, options);
             } else {
-                setTimeout(checkForUpdates, 2000, element, resource, options);
+                setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options);
             }
         });
     };
@@ -277,7 +264,18 @@
      * @api private
      */
     var canEmbedAsImage = function(resource) {
-        return (resource.images || resource.mimeType.indexOf('image/') === 0);
+        if (!resource.images) {
+            return false;
+        }
+
+        var hasDoneImage = false
+        var images = Object.keys(resource.images).forEach(function(image) {
+            if (resource.images[image].status === 'done') {
+                hasDoneImage = true;
+            }
+        });
+
+        return hasDoneImage;
     };
 
     /**
