@@ -57,7 +57,7 @@
                 return options.callback(err);
             }
 
-            if (resource.status !== 'pending') {
+            if (resource.status !== 'pending' || canEmbedAsDocument(resource)) {
                 embed(element, resource, options);
             } else {
                 setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options);
@@ -242,7 +242,7 @@
      * @api private
      */
     var canEmbedAsDocument = function(resource) {
-        return resource.htmlPages;
+        return (resource.htmlPages && resource.htmlPages.status === 'done');
     };
 
     /**
