@@ -275,7 +275,35 @@
      * @api private
      */
     var canEmbedAsImage = function(resource) {
-        return (resource.images !== undefined);
+        var imageTypes = [
+            'application/dicom',
+            'application/postscript',
+            'application/tga',
+            'application/x-font-ttf',
+            'application/x-tga',
+            'application/x-targa',
+            'image/bmp',
+            'image/gif',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/svg+xml',
+            'image/targa',
+            'image/tga',
+            'image/tiff',
+            'image/vnd.adobe.photoshop',
+            'image/webp',
+            'image/x-cmu-raster',
+            'image/x-gnuplot',
+            'image/x-icon',
+            'image/x-targa',
+            'image/x-tga',
+            'image/x-xbitmap',
+            'image/x-xpixmap',
+            'image/x-xwindowdump',
+            'image/xcf'
+        ];
+        return (imageTypes.indexOf(resource.mimeType) !== -1);
     };
 
     /**
