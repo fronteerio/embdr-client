@@ -51,7 +51,8 @@
      * @param  {Object}     options         A set of additional embed options
      * @api private
      */
-    var checkForUpdates = function(element, resourceId, embedKey, options) {
+    var checkForUpdates = function(element, resourceId, embedKey, options, _nr) {
+        _nr = _nr || 1;
         getResourceData(resourceId, embedKey, function(err, resource) {
             if (err) {
                 return options.callback(err);
@@ -60,7 +61,13 @@
             if (resource.status !== 'pending' || canEmbedAsDocument(resource)) {
                 embed(element, resource, options);
             } else {
-                setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options);
+                // Invoke a user provided callback if the resource is still pending
+                if (_nr === 1 && options.pending) {
+                    options.pending(resource);
+                }
+
+                // Try he resource again in a few
+                setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options, _nr + 1);
             }
         });
     };
