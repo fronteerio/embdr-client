@@ -61,7 +61,7 @@
             // If the resource has been processed we can embed a preview in the DOM. If the resource
             // is a document or an image we can embed it as well, as both those types can handle
             // pending resources
-            if (resource.status !== 'pending' || canEmbedAsDocument(resource) || canEmbedAsImage(resource)) {
+            if (canEmbedAsDocument(resource) || canEmbedAsImage(resource) || canEmbedAsOEmbed(resource) || resource.status === 'done') {
                 embed(element, resource, options);
             } else {
                 // Invoke a user provided callback if the resource is still pending
@@ -109,6 +109,8 @@
             return getPendingEmbedCode(resource, options);
         } else if (embedType === 'iframe') {
             return getIframeEmbedCode(resource, options);
+        } else if (embedType === 'oembed') {
+            return getOEmbedEmbedCode(resource, options);
         } else if (embedType === 'image') {
             return getImageEmbedCode(resource, options);
         } else if (embedType === 'unsupported') {
@@ -129,6 +131,19 @@
             'src="//' + EMBDR_DOMAIN + '/document.html?id=' + resource.id + '&embedKey=' + resource.embedKey + '&loadingIcon=' + options.loadingIcon + '"' +
             'webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" allowscriptaccess="always" scrolling="no">' +
             '</iframe>';
+    };
+
+    /**
+     * Get the embed code for a document that can be embedded through oEmbed
+     *
+     * @param  {Object}     resource        The resource to get the embed code for
+     * @param  {Object}     options         A set of additional embed options
+     * @return {String}                     The embed code for a resource
+     * @api private
+     */
+    var getOEmbedEmbedCode = function(resource, options) {
+        var protocol = document.location.protocol.split(':')[0];
+        return resource.metadata[protocol + 'Oembed'].html;
     };
 
     /**
@@ -233,6 +248,10 @@
         } else if (canEmbedAsImage(resource)) {
             return 'image';
 
+        // Check whether we can embed through oEmbed
+        } else if (canEmbedAsOEmbed(resource)) {
+            return 'oembed';
+
         // At this point we have to wait until the resource is done processing
         } else if (resource.status === 'pending') {
             return 'pending';
@@ -254,6 +273,19 @@
      */
     var canEmbedAsDocument = function(resource) {
         return (resource.htmlPages);
+    };
+
+    /**
+     * Check whether a resource can be embedded through oEmbed
+     *
+     * @param  {Object}     resource    The resource to embed
+     * @return {Boolean}                `true` if the resource can be embedded through oEmbed
+     * @api private
+     */
+    var canEmbedAsOEmbed = function(resource) {
+        var protocol = document.location.protocol.split(':')[0];
+        var oEmbedData = resource.metadata[protocol + 'Oembed'];
+        return (oEmbedData && oEmbedData.type && oEmbedData.html);
     };
 
     /**
