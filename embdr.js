@@ -70,13 +70,19 @@
                 return options.unsupported(resource);
             }
 
-            // If the resource has been processed we can embed a preview in the DOM. If the resource
-            // is a document or an image we can embed it as well, as both those types can handle
-            // pending resources
-            if (canEmbedAsDocument(resource) || canEmbedAsImage(resource) || canEmbedAsOEmbed(resource) || resource.status === 'done') {
-                embed(element, resource, options);
-            } else if (resource.status === 'unsupported') {
+            // If we don't support the the type of resource (or worse, something went wrong) we invoke
+            // the unsupported function to indicate that we can't deal with the resource. It's up to
+            // the consumer to show an appropriate message
+            if (resource.status === 'unsupported' || resource.status === 'error') {
                 options.unsupported(resource);
+
+            // Check whether we're ready to embed the resource in the DOM. Certain type of files
+            // can be embedded straight away (e.g., images) whilst others need some more information
+            // to be available (e.g., PDF documents or links)
+            } else if (canEmbedNow(resource)) {
+                embed(element, resource, options);
+
+            // The resource is still being processed, wait a little while and try again
             } else {
                 // Invoke a user provided callback if the resource is still pending
                 if (_nr === 1 && options.pending) {
@@ -89,6 +95,20 @@
         });
 
         return _coordinator;
+    };
+
+    /**
+     * Check whether there's enough data present to embed a resource
+     *
+     * @param  {Object}     resource    The resource to embed
+     * @return {Boolean}                `true` if the resource is ready to be embedded in the DOM
+     * @api private
+     */
+    var canEmbedNow = function(resource) {
+        return ((resource.status !== 'pending') ||
+                (canEmbedAsDocument(resource) && resource.htmlPages.status === 'done') ||
+                (canEmbedAsImage(resource)) ||
+                (canEmbedAsOEmbed(resource)));
     };
 
     /**
