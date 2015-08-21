@@ -6,6 +6,9 @@
 
     var EMBDR_DOMAIN = 'embdr.io';
 
+    // Variable that keeps track of the timeout id when polling the REST API
+    var updateCheckTimeout = null;
+
     /**
      * Embed a resource in the DOM
      *
@@ -13,15 +16,16 @@
      * @param  {String}             resourceId                                      The id of the Embdr resource that should be embedded
      * @param  {String}             embedKey                                        The key that can be used to retrieve the Embdr resource. This is provided when the resource was created
      * @param  {Object}             [options]                                       A set of additional embed options
-     * @param  {Object}             [options.callback]                              Invoked when a resource has been embedded or when an error occurred
-     * @param  {Object}             [options.callback.err]                          An error object, if any
      * @param  {String}             [options.loadingIcon]                           This icon will be used in the loading animation when embedding a document. This defaults to the Embdr logo
+     * @param  {Function}           [options.complete]                              Invoked when a resource has been embedded
+     * @param  {Object}             [options.complete.resource]                     The full resource data is passed in so you can customise your own message appropriately
      * @param  {Function}           [options.unsupported]                           Invoked when an unsupported resource was uploaded for which no previews can be generated. If this function is omitted an image will be displayed explaining no previews could be generated
      * @param  {Object}             [options.unsupported.resource]                  The full resource data is passed in so you can customise your own message appropriately
      * @param  {Function}           [options.pending]                               Invoked when a resource is still being processed
      * @param  {Object}             [options.pending.resource]                      The full resource data is passed in so you can customise your own message appropriately
      * @param  {Function}           [options.linkEmbeddedAsImage]                   Invoked when a link resource cannot be embedded as an iframe but will be iframed as an image
      * @param  {Object}             [options.linkEmbeddedAsImage.resource]          The full resource data is passed in so you can customise your own message appropriately
+     * @return {Object}                                                             An object that holds a `cancel` function that can be used to stop polling for more information if the resource still has `pending` previews
      */
     window.embdr = function(element, resourceId, embedKey, options) {
         // Allow the consumer to pass in element or the id of an element
@@ -38,7 +42,7 @@
         options.linkEmbeddedAsImage = options.linkEmbeddedAsImage || function() {};
 
         // Get the data from the REST API and embed the previews (if any)
-        checkForUpdates(element, resourceId, embedKey, options);
+        return checkForUpdates(element, resourceId, embedKey, options);
     };
 
     /**
@@ -51,11 +55,19 @@
      * @param  {Object}     options         A set of additional embed options
      * @api private
      */
-    var checkForUpdates = function(element, resourceId, embedKey, options, _nr) {
+    var checkForUpdates = function(element, resourceId, embedKey, options, _nr, _coordinator) {
+        _coordinator = _coordinator || {};
+        _coordinator.cancel = _coordinator.cancel || function() {
+            if (_coordinator.updateCheckTimeout) {
+                clearTimeout(_coordinator.updateCheckTimeout);
+                _coordinator.updateCheckTimeout = null;
+            }
+        };
+
         _nr = _nr || 1;
         getResourceData(resourceId, embedKey, function(err, resource) {
             if (err) {
-                return options.callback(err);
+                return options.unsupported(resource);
             }
 
             // If the resource has been processed we can embed a preview in the DOM. If the resource
@@ -63,6 +75,8 @@
             // pending resources
             if (canEmbedAsDocument(resource) || canEmbedAsImage(resource) || canEmbedAsOEmbed(resource) || resource.status === 'done') {
                 embed(element, resource, options);
+            } else if (resource.status === 'unsupported') {
+                options.unsupported(resource);
             } else {
                 // Invoke a user provided callback if the resource is still pending
                 if (_nr === 1 && options.pending) {
@@ -70,9 +84,11 @@
                 }
 
                 // Try he resource again in a few
-                setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options, _nr + 1);
+                _coordinator.updateCheckTimeout = setTimeout(checkForUpdates, 2000, element, resourceId, embedKey, options, _nr + 1);
             }
         });
+
+        return _coordinator;
     };
 
     /**
@@ -88,7 +104,7 @@
         if (element && html) {
             element.innerHTML = html;
         }
-        return options.callback(null, resource);
+        options.complete(resource);
     };
 
     /**
