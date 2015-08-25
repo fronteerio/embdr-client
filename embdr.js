@@ -123,8 +123,8 @@
         var html = getEmbedCode(resource, options);
         if (element && html) {
             element.innerHTML = html;
+            options.complete(resource);
         }
-        options.complete(resource);
     };
 
     /**
