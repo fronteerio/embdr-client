@@ -200,6 +200,14 @@
         // Embed the resource as an iframe
         if (resource.metadata.redirectUrl || isEmbeddable) {
             var url = resource.metadata.redirectUrl || resource.metadata.url;
+
+            // Ensure we embed the correct protocol
+            if (protocol === 'https' && url.indexOf('http://') !== -1) {
+                url = url.replace(/http:/, 'https:');
+            } else if (protocol === 'http' && url.indexOf('https://') !== -1) {
+                url = url.replace(/https:/, 'http:');
+            }
+
             return '<iframe class="embdr-iframe" width="100%" height="390" src="' + url + '" ' +
                 'frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen ' +
                 'allowscriptaccess="always" scrolling="yes"></iframe>';
