@@ -5,5 +5,6 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/fronteerio/embdr-client.git"
-  }
+  },
+  "license": "Apache-2.0"
 }
