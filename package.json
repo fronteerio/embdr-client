@@ -1,0 +1,9 @@
+{
+  "name": "embdr-client",
+  "version": "0.0.12",
+  "main": "embdr.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/fronteerio/embdr-client.git"
+  }
+}
