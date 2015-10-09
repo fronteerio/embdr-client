@@ -35,10 +35,10 @@
 
         // Default all the options
         options = options || {};
-        options.callback = options.callback || function() {};
+        options.complete = options.complete || function() {};
         options.loadingIcon = options.loadingIcon || '//embdr.io/images/logo.png';
-        options.pending = options.pending || '//embdr.io/images/pending.png';
-        options.unsupported = options.unsupported || '//embdr.io/images/unsupported.png';
+        options.pending = options.pending || function() {};
+        options.unsupported = options.unsupported || function() {};
         options.linkEmbeddedAsImage = options.linkEmbeddedAsImage || function() {};
 
         // Get the data from the REST API and embed the previews (if any)
@@ -143,6 +143,10 @@
             return getDocumentEmbedCode(resource, options);
         } else if (embedType === 'pending') {
             return getPendingEmbedCode(resource, options);
+
+        // The following previews can only be embedded when some processors have run
+        } else if (embedType === 'csv') {
+            return getCSVEmbedCode(resource, options);
         } else if (embedType === 'iframe') {
             return getIframeEmbedCode(resource, options);
         } else if (embedType === 'oembed') {
@@ -166,6 +170,21 @@
         return '<iframe class="embdr-document" width="600" height="800" frameborder="0"' +
             'src="//' + EMBDR_DOMAIN + '/document.html?id=' + resource.id + '&embedKey=' + resource.embedKey + '&loadingIcon=' + options.loadingIcon + '"' +
             'webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" allowscriptaccess="always" scrolling="no">' +
+            '</iframe>';
+    };
+
+    /**
+     * Get the embed code for a CSV file
+     *
+     * @param  {Object}     resource        The resource to get the embed code for
+     * @param  {Object}     options         A set of additional embed options
+     * @return {String}                     The embed code for a resource
+     * @api private
+     */
+    var getCSVEmbedCode = function(resource, options) {
+        return '<iframe class="embdr-csv" width="600" height="800" frameborder="0"' +
+            'src="//' + EMBDR_DOMAIN + '/csv.html?id=' + resource.id + '&embedKey=' + resource.embedKey + '&loadingIcon=' + options.loadingIcon + '"' +
+            'webkitallowfullscreen="" mozallowfullscreen="" allowfullscreen="" allowscriptaccess="always" scrolling="yes">' +
             '</iframe>';
     };
 
@@ -284,8 +303,13 @@
      * @api private
      */
     var getEmbedType = function(resource) {
-        // Always use the document processor if the resource can be embedded that way
-        if (canEmbedAsDocument(resource)) {
+
+        // Check whether we can embed a CSV file
+        if (canEmbedAsCSV(resource)) {
+            return 'csv';
+
+        // Check whether we can embed a document
+        } else if (canEmbedAsDocument(resource)) {
             return 'document';
 
         // Check whether we can embed an image
@@ -317,6 +341,17 @@
      */
     var canEmbedAsDocument = function(resource) {
         return (resource.htmlPages);
+    };
+
+    /**
+     * Check whether a resource can be embedded as a CSV file
+     *
+     * @param  {Object}     resource    The resource to embed
+     * @return {Boolean}                `true` if the resource can be embedded as a CSV file
+     * @api private
+     */
+    var canEmbedAsCSV = function(resource) {
+        return (resource.mimeType === 'text/csv');
     };
 
     /**
@@ -372,6 +407,7 @@
             'image/x-cmu-raster',
             'image/x-gnuplot',
             'image/x-icon',
+            'image/x-ms-bmp',
             'image/x-targa',
             'image/x-tga',
             'image/x-xbitmap',
@@ -420,5 +456,4 @@
 
         request.send();
     };
-
 })();
